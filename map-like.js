@@ -225,6 +225,8 @@ Object.defineProperty(Headers.prototype, 'size', {
   
 })();
 
+
+/*
 console.log(Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(Headers.prototype).includes(x)));
 
 console.log(new Headers({
@@ -233,3 +235,4 @@ console.log(new Headers({
 }).mapValues(x=>(x+1).toString()));
 
 
+*/
