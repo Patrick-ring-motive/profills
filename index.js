@@ -6,12 +6,9 @@
 
 
   
-  console.log(Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(Headers.prototype).includes(x)));
+  console.log('Headers',Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(Headers.prototype).includes(x)));
+  console.log('FormData',Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(FormData.prototype).includes(x)));
+   console.log('URLSearchParams',Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(URLSearchParams.prototype).includes(x)));
 
-  console.log(new Headers({
-    0:'a',
-    1:'b'
-  }).mapValues(x=>(x+1).toString()));
-  
-  
+
 })();
