@@ -481,15 +481,19 @@
       return fd;
     };
     FormData.from ??= function from(obj) {
-      let entries;
+      let entries,fd;
+      try{
+        fd = new FormData(...arguments);
+      }catch{
       try {
         entries = new URLSearchParams(obj);
       } catch {
         entries = new URLSearchParams(Object.entries(obj));
       }
-      const fd = new FormData();
+      fd = new FormData();
       for (const [key, value] of entries) {
         fd.append(key, value);
+      }
       }
       return fd;
     };
