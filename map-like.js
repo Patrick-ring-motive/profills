@@ -1,3 +1,4 @@
+
 (() => {
   const objDoProp = function (obj, prop, def, enm, mut) {
     return Object.defineProperty(obj, prop, {
@@ -16,7 +17,7 @@
     }
   };
   const TypedArray = Uint8Array?.__proto__;
-
+  const isFunction = (x) => typeof x === "function" || x instanceof Function;
   const isString = (x) => typeof x === "string" || x instanceof String;
   const isArray = (x) =>
     Array.isArray(x) || x instanceof Array || instanceOf(x, TypedArray);
@@ -496,6 +497,20 @@
         }
       }
       return fd;
+    };
+    FormData.prototype.upsert = function upsert(key, updateFn, insertFn) {
+      let value;
+      if (this.has(key)) {
+        value = this.get(key);
+        if (isFunction(updateFn)) {
+          value = updateFn(value);
+          this.set(key, value);
+        }
+      } else if (isFunction(insertFn)) {
+        value = insertFn();
+        this.set(key, value);
+      }
+      return value;
     };
   })();
 })();
