@@ -148,6 +148,13 @@
         .filter(([k, v]) => k?.valueOf() == key?.valueOf())
         .map(([k, v]) => v);
     };
+    Map.from = function from(obj) {
+      try {
+        return new Map(obj);
+      } catch {
+        return new Map(Object.entries(obj));
+      }
+    };
   })();
 
   //headers
@@ -253,6 +260,13 @@
       }
       return headers;
     };
+    Headers.from = function from(obj) {
+      try {
+        return new Headers(new URLSearchParams(obj));
+      } catch {
+        return new Headers(new URLSearchParams(Object.entries(obj)));
+      }
+    };
   })();
 
   //URLSearchParams
@@ -356,8 +370,15 @@
       }
       return headers;
     };
+    URLSearchParams.from = function from(obj) {
+      try {
+        return new URLSearchParams(obj);
+      } catch {
+        return new URLSearchParams(Object.entries(obj));
+      }
+    };
   })();
-  
+
   //FormData
   (() => {
     if (!globalThis.FormData) return;
@@ -458,6 +479,19 @@
         });
       }
       return headers;
+    };
+    FormData.from ??= function from(obj) {
+      let entries;
+      try {
+        entries = new URLSearchParams(obj);
+      } catch {
+        entries = new URLSearchParams(Object.entries(obj));
+      }
+      const fd = new FormData();
+      for (const [key, value] of entries) {
+        fd.append(key, value);
+      }
+      return fd;
     };
   })();
 })();

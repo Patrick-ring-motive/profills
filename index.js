@@ -10,5 +10,14 @@
   console.log('FormData',Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(FormData.prototype).includes(x)));
    console.log('URLSearchParams',Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(URLSearchParams.prototype).includes(x)));
 
+//console.log((await(await fetch('https://shop.calebhammer.com/')).text()).split(/meta/gi).map(x=>x.split('>').shift()));
+//console.log( await(await fetch('https://shop.calebhammer.com/')).text());
+const fd = function fd(x){
+  return new FormData(new URLSearchParams(x));
+}
 
+ console.log(fd(Object.entries({'aaaa':'bbbb','aaa':'ggg'})));
+
+
+  
 })();
