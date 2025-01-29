@@ -368,7 +368,7 @@
           up.append(key, value);
         });
       }
-      return headers;
+      return up;
     };
     URLSearchParams.from = function from(obj) {
       try {
@@ -472,13 +472,13 @@
       return retObj;
     };
     FormData.prototype.merge ??= function merge(...args) {
-      const fd = new FormData(this);
+      const fd = FormData.from(this);
       for (const iter of args) {
         new FormData(iter).forEach((value, key) => {
           fd.append(key, value);
         });
       }
-      return headers;
+      return fd;
     };
     FormData.from ??= function from(obj) {
       let entries;
