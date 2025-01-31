@@ -70,7 +70,7 @@
     //arrays
     globalThis.TypedArray ??= Uint8Array.__proto__;
     Array.prototype.subarray ??= function subarray(){
-      return this.slice(...arguments);
+      return this.slice(...Array.from(arguments));
     };
     Array.prototype.set ??= function set(arr,offset = 0){
       const len = arr.length;
@@ -79,74 +79,74 @@
       }
     };
     TypedArray.prototype.toSpliced ??= function toSpliced(){
-      return new this.constructor([...this].splice(...arguments));
+      return new this.constructor([...this].splice(...Array.from(arguments)));
     };
   })();
 
   //sets
   (()=>{
     Set.prototype.findIndex ??= function findIndex(){
-      return [...this].findIndex(...arguments);
+      return [...this].findIndex(...Array.from(arguments));
     };
     Set.prototype.findLastIndex ??= function findLastIndex(){
-      return [...this].findLastIndex(...arguments);
+      return [...this].findLastIndex(...Array.from(arguments));
     };
     Set.prototype.find ??= function find(){
-      return [...this].find(...arguments);
+      return [...this].find(...Array.from(arguments));
     };
     Set.prototype.findLast ??= function findLast(){
-      return [...this].findLast(...arguments);
+      return [...this].findLast(...Array.from(arguments));
     };
     Set.prototype.includes ??= function includes(){
-      return this.has(...arguments);
+      return this.has(...Array.from(arguments));
     };
     Set.prototype.indexOf ??= function indexOf(){
-      return [...this].indexOf(...arguments);
+      return [...this].indexOf(...Array.from(arguments));
     };
     Set.prototype.lastIndexOf ??= function lastIndexOf(){
-      return [...this].lastIndexOf(...arguments);
+      return [...this].lastIndexOf(...Array.from(arguments));
     };
     Set.prototype.flat ??= function flat(){
-      return new Set([...this].flat(...arguments));
+      return new Set([...this].flat(...Array.from(arguments)));
     };
     Set.prototype.map ??= function map(){
-      return new Set([...this].map(...arguments));
+      return new Set([...this].map(...Array.from(arguments)));
     };
     Set.prototype.flatMap ??= function flatMap(){
-      return new Set([...this].flatMap(...arguments));
+      return new Set([...this].flatMap(...Array.from(arguments)));
     };
     Set.prototype.reduceRight ??= function reduceRight(){
-      return [...this].reduceRight(...arguments);
+      return [...this].reduceRight(...Array.from(arguments));
     };
     Set.prototype.reduce ??= function reduce(){
-      return [...this].reduce(...arguments);
+      return [...this].reduce(...Array.from(arguments));
     };
     Set.prototype.join ??= function join(){
-      return [...this].join(...arguments);
+      return [...this].join(...Array.from(arguments));
     };
     Set.prototype.every ??= function every(){
-      return [...this].every(...arguments);
+      return [...this].every(...Array.from(arguments));
     };
     Set.prototype.some ??= function some(){
-      return [...this].some(...arguments);
+      return [...this].some(...Array.from(arguments));
     };
     Set.prototype.at ??= function at(){
-      return [...this].at(...arguments);
+      return [...this].at(...Array.from(arguments));
     };
     Set.prototype.filter ??= function filter(){
-      return new Set([...this].filter(...arguments));
+      return new Set([...this].filter(...Array.from(arguments)));
     };
     Set.prototype.toReversed ??= function toReversed(){
-      return new Set([...this].toReversed(...arguments));
+      return new Set([...this].toReversed(...Array.from(arguments)));
     };
     Set.prototype.toSorted ??= function toSorted(){
-      return new Set([...this].toSorted(...arguments));
+      return new Set([...this].toSorted(...Array.from(arguments)));
     };
     Set.prototype.toSpliced ??= function toSpliced(){
-      return new Set([...this].toSpliced(...arguments));
+      return new Set([...this].toSpliced(...Array.from(arguments)));
     };
     Set.prototype.subarray ??= function subarray(){
-      return [...this].slice(...arguments);
+      return [...this].slice(...Array.from(arguments));
     };
     Set.prototype.concat ??= function concat(...args){
       return new Set([...this].concat(...args.map(x=>instanceOf(x,Set)?[...x]:x)));
@@ -159,64 +159,64 @@
       return [...this].concat(...args.map(x=>isString(x)?[...x]:x)).join``;
     };
     String.prototype.find ??= function find(){
-      return [...this].find(...arguments);
+      return [...this].find(...Array.from(arguments));
     };
     String.prototype.findIndex ??= function findIndex(){
-      return [...this].findIndex(...arguments);
+      return [...this].findIndex(...Array.from(arguments));
     };
     String.prototype.findLast ??= function findLast(){
-      return [...this].findLast(...arguments);
+      return [...this].findLast(...Array.from(arguments));
     };
     String.prototype.findLastIndex ??= function findLastIndex(){
-      return [...this].findLastIndex(...arguments);
+      return [...this].findLastIndex(...Array.from(arguments));
     };
     String.prototype.join ??= function join(){
-      return [...this].join(...arguments);
+      return [...this].join(...Array.from(arguments));
     };
     String.prototype.keys ??= function keys(){
-      return [...this].keys(...arguments);
+      return [...this].keys(...Array.from(arguments));
     };
     String.prototype.entries ??= function entries(){
-      return [...this].entries(...arguments);
+      return [...this].entries(...Array.from(arguments));
     };
     String.prototype.values ??= function values(){
-      return this[Symbol.iterator](...arguments);
+      return this[Symbol.iterator](...Array.from(arguments));
     };
     String.prototype.values ??= function values(){
-      return this[Symbol.iterator](...arguments);
+      return this[Symbol.iterator](...Array.from(arguments));
     };
     String.prototype.forEach ??= function forEach(){
-      return this[Symbol.iterator]().forEach(...arguments);
+      return this[Symbol.iterator]().forEach(...Array.from(arguments));
     };
     String.prototype.filter ??= function filter(){
-      return [...this].filter(...arguments).join``;
+      return [...this].filter(...Array.from(arguments)).join``;
     };
     String.prototype.map ??= function map(){
-      return [...this].map(...arguments).join``;
+      return [...this].map(...Array.from(arguments)).join``;
     };
     String.prototype.every ??= function every(){
-      return [...this].every(...arguments);
+      return [...this].every(...Array.from(arguments));
     };
     String.prototype.some ??= function some(){
-      return [...this].some(...arguments);
+      return [...this].some(...Array.from(arguments));
     };
     String.prototype.reduce ??= function reduce(){
-      return [...this].reduce(...arguments);
+      return [...this].reduce(...Array.from(arguments));
     };
     String.prototype.reduceRight ??= function reduceRight(){
-      return [...this].reduceRight(...arguments);
+      return [...this].reduceRight(...Array.from(arguments));
     };
     String.prototype.toReversed ??= function toReversed(){
-      return [...this].toReversed(...arguments).join``;
+      return [...this].toReversed(...Array.from(arguments)).join``;
     };
     String.prototype.toSorted ??= function toSorted(){
-      return [...this].toSorted(...arguments).join``;
+      return [...this].toSorted(...Array.from(arguments)).join``;
     };
     String.prototype.toSpliced ??= function toSpliced(){
-      return [...this].toSpliced(...arguments).join``;
+      return [...this].toSpliced(...Array.from(arguments)).join``;
     };
     String.prototype.subarray ??= function subarray(){
-      return [...this].slice(...arguments);
+      return [...this].slice(...Array.from(arguments));
     };
   })();
 

@@ -1,4 +1,3 @@
-
 (() => {
   const objDoProp = function (obj, prop, def, enm, mut) {
     return Object.defineProperty(obj, prop, {
@@ -16,12 +15,15 @@
       return false;
     }
   };
+  const eq = (x, y) => {
+    return x === y || (x !== x && y !== y);
+  };
   const TypedArray = Uint8Array?.__proto__;
   const isFunction = (x) => typeof x === "function" || x instanceof Function;
   const isString = (x) => typeof x === "string" || x instanceof String;
   const isArray = (x) =>
     Array.isArray(x) || x instanceof Array || instanceOf(x, TypedArray);
-
+  const apply = ($this, fn, args) => $this[fn].apply($this, args);
   const pureProxy = (item) => {
     const funcMap = new Map();
     return new Proxy(item, {
@@ -149,7 +151,7 @@
         .filter(([k, v]) => k?.valueOf() == key?.valueOf())
         .map(([k, v]) => v);
     };
-    Map.from = function from(obj) {
+    Map.from ??= function from(obj) {
       try {
         return new Map(obj);
       } catch {
@@ -181,8 +183,11 @@
         return has;
       };
     })();
+
     (() => {
-      Headers.prototype.emplace = function emplace(key, handler) {
+      // `Map.prototype.emplace` method
+      // https://github.com/tc39/proposal-upsert
+      Headers.prototype.emplace ??= function emplace(key, handler) {
         if (this.has(key)) {
           const current = this.get(key);
           if (handler.update) {
@@ -199,40 +204,76 @@
         }
       };
     })();
+
     (() => {
-      if (Map.prototype.filter) {
-        Headers.prototype.filter ??= function filter() {
-          const filtered = new Headers();
-          new Map(this).filter(...arguments).forEach((value, key) => {
-            filtered.append(key, value);
-          });
-          return filtered;
-        };
-      }
-      Headers.prototype.some ??= function some() {
-        return [...this].some(...arguments);
+      // `Map.prototype.filter` method
+      // https://github.com/tc39/proposal-collection-methods
+      Headers.prototype.filter ??= function filter(callbackfn, thisArg) {
+        const fn = callbackfn.bind(thisArg);
+        const fd = new FormData();
+        this.forEach((value, key) => {
+          if (fn(value, key, this)) fd.set(key, value);
+        });
+        return fd;
       };
+    })();
+
+    // `Map.prototype.some` method
+    // https://github.com/tc39/proposal-collection-methods
+    Headers.prototype.some ??= function some() {
+      let rtrn = false;
+      const fn = callbackfn.bind(thisArg);
+      this.forEach((value, key) => {
+        if (fn(value, key, this)) rtrn = true;
+      });
+      return rtrn;
+    };
+
+    (() => {
+      // `Map.prototype.every` method
+      // https://github.com/tc39/proposal-collection-methods
       Headers.prototype.every ??= function every() {
-        return [...this].every(...arguments);
+        let rtrn = true;
+        const fn = callbackfn.bind(thisArg);
+        this.forEach((value, key) => {
+          if (!fn(value, key, this)) rtrn = false;
+        });
+        return rtrn;
       };
-      Headers.prototype.includes ??= function includes() {
-        return [...this.values()].includes(...arguments);
+    })();
+
+    (() => {
+      // `Map.prototype.includes` method
+      // https://github.com/tc39/proposal-collection-methods
+      FormData.prototype.includes ??= function includes() {
+        return apply(Array.from(this.values()), "includes", arguments);
       };
-      Headers.prototype.find ??= function find() {
-        return [...this.values()].find(...arguments);
+    })();
+
+    (() => {
+      // `Map.prototype.find` method
+      // https://github.com/tc39/proposal-collection-methods
+      Headers.prototype.find ??= function find(callbackfn, thisArg) {
+        const boundFunction = bind(callbackfn, thisArg);
+        for (const [key, value] of this) {
+          if (boundFunction(value, key, this)) return value;
+        }
       };
+    })();
+    (() => {
       Headers.prototype.getAll ??= function getAll(key) {
         if (!this.has(key)) return [];
         if (/set-cookie/i.test(key)) return this.getSetCookie();
         return String(this.get(key)).split(", ");
       };
     })();
-    Object.defineProperty(Headers.prototype, "size", {
-      get() {
-        return [...this.entries()].length;
-      },
-      set() {},
-    });
+    new Headers().size ??
+      Object.defineProperty(Headers.prototype, "size", {
+        get() {
+          return Array.from(this.entries()).length;
+        },
+        set() {},
+      });
     Headers.prototype.mapValues ??= function mapValues(
       callbackFn,
       thisArg = this,
@@ -252,22 +293,48 @@
       }
       return retObj;
     };
-    Headers.prototype.merge ??= function merge(...args) {
+    Headers.prototype.merge ??= function merge() {
       const headers = new Headers(this);
-      for (const iter of args) {
+      for (const iter of Array.from(arguments)) {
         new Headers(iter).forEach((value, key) => {
           headers.append(key, value);
         });
       }
       return headers;
     };
-    Headers.from = function from(obj) {
+    Headers.from ??= function from(obj) {
       try {
         return new Headers(new URLSearchParams(obj));
       } catch {
         return new Headers(new URLSearchParams(Object.entries(obj)));
       }
     };
+    Headers.prototype.upsert ??= function upsert(key, updateFn, insertFn) {
+      let value;
+      if (this.has(key)) {
+        value = this.get(key);
+        if (isFunction(updateFn)) {
+          value = updateFn(value);
+          this.set(key, value);
+        }
+      } else if (isFunction(insertFn)) {
+        value = insertFn();
+        this.set(key, value);
+      }
+      return value;
+    };
+    Headers.prototype.deleteAll ??= function deleteAll(keys) {
+      let all = true;
+      for (const key of keys) {
+        all = all && this.delete(key);
+      }
+      return all;
+    };
+    Headers.prototype.update ??= function update(key, callback, thunk) {
+      this.set(key, callback(this.get(key) ?? thunk(key, this), key, this));
+      return this;
+    };
+    Headers.prototype.updateOrInsert ??= Headers.prototype.upsert;
   })();
 
   //URLSearchParams
@@ -293,8 +360,11 @@
         return has;
       };
     })();
+
     (() => {
-      URLSearchParams.prototype.emplace = function emplace(key, handler) {
+      // `Map.prototype.emplace` method
+      // https://github.com/tc39/proposal-upsert
+      URLSearchParams.prototype.emplace ??= function emplace(key, handler) {
         if (this.has(key)) {
           const current = this.get(key);
           if (handler.update) {
@@ -311,35 +381,72 @@
         }
       };
     })();
+
     (() => {
-      if (Map.prototype.filter) {
-        URLSearchParams.prototype.filter ??= function filter() {
-          const filtered = new URLSearchParams();
-          new Map(this).filter(...arguments).forEach((value, key) => {
-            filtered.append(key, value);
-          });
-          return filtered;
-        };
-      }
-      URLSearchParams.prototype.some ??= function some() {
-        return [...this].some(...arguments);
-      };
-      URLSearchParams.prototype.every ??= function every() {
-        return [...this].every(...arguments);
-      };
-      URLSearchParams.prototype.includes ??= function includes() {
-        return [...this.values()].includes(...arguments);
-      };
-      URLSearchParams.prototype.find ??= function find() {
-        return [...this.values()].find(...arguments);
+      // `Map.prototype.filter` method
+      // https://github.com/tc39/proposal-collection-methods
+      URLSearchParams.prototype.filter ??= function filter(
+        callbackfn,
+        thisArg,
+      ) {
+        const fn = callbackfn.bind(thisArg);
+        const fd = new FormData();
+        this.forEach((value, key) => {
+          if (fn(value, key, this)) fd.set(key, value);
+        });
+        return fd;
       };
     })();
-    Object.defineProperty(URLSearchParams.prototype, "size", {
-      get() {
-        return [...this.entries()].length;
-      },
-      set() {},
-    });
+
+    // `Map.prototype.some` method
+    // https://github.com/tc39/proposal-collection-methods
+    URLSearchParams.prototype.some ??= function some() {
+      let rtrn = false;
+      const fn = callbackfn.bind(thisArg);
+      this.forEach((value, key) => {
+        if (fn(value, key, this)) rtrn = true;
+      });
+      return rtrn;
+    };
+
+    (() => {
+      // `Map.prototype.every` method
+      // https://github.com/tc39/proposal-collection-methods
+      URLSearchParams.prototype.every ??= function every() {
+        let rtrn = true;
+        const fn = callbackfn.bind(thisArg);
+        this.forEach((value, key) => {
+          if (!fn(value, key, this)) rtrn = false;
+        });
+        return rtrn;
+      };
+    })();
+
+    (() => {
+      // `Map.prototype.includes` method
+      // https://github.com/tc39/proposal-collection-methods
+      URLSearchParams.prototype.includes ??= function includes() {
+        return apply(Array.from(this.values()), "includes", arguments);
+      };
+    })();
+
+    (() => {
+      // `Map.prototype.find` method
+      // https://github.com/tc39/proposal-collection-methods
+      URLSearchParams.prototype.find ??= function find(callbackfn, thisArg) {
+        const boundFunction = bind(callbackfn, thisArg);
+        for (const [key, value] of this) {
+          if (boundFunction(value, key, this)) return value;
+        }
+      };
+    })();
+    new URLSearchParams().size ??
+      Object.defineProperty(URLSearchParams.prototype, "size", {
+        get() {
+          return Array.from(this.entries()).length;
+        },
+        set() {},
+      });
     URLSearchParams.prototype.mapValues ??= function mapValues(
       callbackFn,
       thisArg = this,
@@ -362,32 +469,65 @@
       }
       return retObj;
     };
-    URLSearchParams.prototype.merge ??= function merge(...args) {
+    URLSearchParams.prototype.merge ??= function merge() {
       const up = new URLSearchParams(this);
-      for (const iter of args) {
+      for (const iter of Array.from(arguments)) {
         new URLSearchParams(iter).forEach((value, key) => {
           up.append(key, value);
         });
       }
       return up;
     };
-    URLSearchParams.from = function from(obj) {
+    URLSearchParams.from ??= function from(obj) {
       try {
         return new URLSearchParams(obj);
       } catch {
         return new URLSearchParams(Object.entries(obj));
       }
     };
+    URLSearchParams.prototype.upsert ??= function upsert(
+      key,
+      updateFn,
+      insertFn,
+    ) {
+      let value;
+      if (this.has(key)) {
+        value = this.get(key);
+        if (isFunction(updateFn)) {
+          value = updateFn(value);
+          this.set(key, value);
+        }
+      } else if (isFunction(insertFn)) {
+        value = insertFn();
+        this.set(key, value);
+      }
+      return value;
+    };
+    URLSearchParams.prototype.deleteAll ??= function deleteAll(keys) {
+      let all = true;
+      for (const key of keys) {
+        all = all && this.delete(key);
+      }
+      return all;
+    };
+    URLSearchParams.prototype.update ??= function update(key, callback, thunk) {
+      this.set(key, callback(this.get(key) ?? thunk(key, this), key, this));
+      return this;
+    };
+    URLSearchParams.prototype.updateOrInsert ??=
+      URLSearchParams.prototype.upsert;
   })();
 
   //FormData
   (() => {
     if (!globalThis.FormData) return;
-    FormData.prototype.clear ??= function clear() {
-      this.forEach((_, key) => {
-        this.delete(key);
-      });
-    };
+    (() => {
+      FormData.prototype.clear ??= function clear() {
+        this.forEach((_, key) => {
+          this.delete(key);
+        });
+      };
+    })();
     (() => {
       const $set = FormData.prototype.set;
       FormData.prototype.set = function set(key, value) {
@@ -403,8 +543,11 @@
         return has;
       };
     })();
+
     (() => {
-      FormData.prototype.emplace = function emplace(key, handler) {
+      // `Map.prototype.emplace` method
+      // https://github.com/tc39/proposal-upsert
+      FormData.prototype.emplace ??= function emplace(key, handler) {
         if (this.has(key)) {
           const current = this.get(key);
           if (handler.update) {
@@ -421,35 +564,70 @@
         }
       };
     })();
+
     (() => {
-      if (Map.prototype.filter) {
-        FormData.prototype.filter ??= function filter() {
-          const filtered = new FormData();
-          new Map(this).filter(...arguments).forEach((value, key) => {
-            filtered.append(key, value);
-          });
-          return filtered;
-        };
-      }
-      FormData.prototype.some ??= function some() {
-        return [...this].some(...arguments);
-      };
-      FormData.prototype.every ??= function every() {
-        return [...this].every(...arguments);
-      };
-      FormData.prototype.includes ??= function includes() {
-        return [...this.values()].includes(...arguments);
-      };
-      FormData.prototype.find ??= function find() {
-        return [...this.values()].find(...arguments);
+      // `Map.prototype.filter` method
+      // https://github.com/tc39/proposal-collection-methods
+      FormData.prototype.filter ??= function filter(callbackfn, thisArg) {
+        const fn = callbackfn.bind(thisArg);
+        const fd = new FormData();
+        this.forEach((value, key) => {
+          if (fn(value, key, this)) fd.set(key, value);
+        });
+        return fd;
       };
     })();
-    Object.defineProperty(FormData.prototype, "size", {
-      get() {
-        return [...this.entries()].length;
-      },
-      set() {},
-    });
+
+    // `Map.prototype.some` method
+    // https://github.com/tc39/proposal-collection-methods
+    FormData.prototype.some ??= function some() {
+      let rtrn = false;
+      const fn = callbackfn.bind(thisArg);
+      this.forEach((value, key) => {
+        if (fn(value, key, this)) rtrn = true;
+      });
+      return rtrn;
+    };
+
+    (() => {
+      // `Map.prototype.every` method
+      // https://github.com/tc39/proposal-collection-methods
+      FormData.prototype.every ??= function every() {
+        let rtrn = true;
+        const fn = callbackfn.bind(thisArg);
+        this.forEach((value, key) => {
+          if (!fn(value, key, this)) rtrn = false;
+        });
+        return rtrn;
+      };
+    })();
+
+    (() => {
+      // `Map.prototype.includes` method
+      // https://github.com/tc39/proposal-collection-methods
+      FormData.prototype.includes ??= function includes() {
+        return apply(Array.from(this.values()), "includes", arguments);
+      };
+    })();
+
+    (() => {
+      // `Map.prototype.find` method
+      // https://github.com/tc39/proposal-collection-methods
+      FormData.prototype.find ??= function find(callbackfn, thisArg) {
+        const boundFunction = bind(callbackfn, thisArg);
+        for (const [key, value] of this) {
+          if (boundFunction(value, key, this)) return value;
+        }
+      };
+    })();
+
+    new FormData().size ??
+      Object.defineProperty(FormData.prototype, "size", {
+        get() {
+          return Array.from(this.entries()).length;
+        },
+        set() {},
+      });
     FormData.prototype.mapValues ??= function mapValues(
       callbackFn,
       thisArg = this,
@@ -475,21 +653,26 @@
     FormData.prototype.merge ??= function merge(...args) {
       const fd = FormData.from(this);
       for (const iter of args) {
-        new FormData(iter).forEach((value, key) => {
+        FormData.from(iter).forEach((value, key) => {
           fd.append(key, value);
         });
       }
       return fd;
     };
-    FormData.from ??= function from(obj) {
+    FormData.from ??= function from(obj, submitter) {
       let entries, fd;
       try {
-        fd = new FormData(...arguments);
+        fd = new FormData(obj, submitter);
       } catch {
         try {
-          entries = new URLSearchParams(obj);
+          fd = new FormData();
+          entries = obj.entries();
+          for (const [key, value] of entries) {
+            fd.append(key, value);
+          }
+          return fd;
         } catch {
-          entries = new URLSearchParams(Object.entries(obj));
+          entries = new URLSearchParams.from(obj);
         }
         fd = new FormData();
         for (const [key, value] of entries) {
@@ -498,7 +681,7 @@
       }
       return fd;
     };
-    FormData.prototype.upsert = function upsert(key, updateFn, insertFn) {
+    FormData.prototype.upsert ??= function upsert(key, updateFn, insertFn) {
       let value;
       if (this.has(key)) {
         value = this.get(key);
@@ -512,5 +695,19 @@
       }
       return value;
     };
+    FormData.prototype.deleteAll ??= function deleteAll(keys) {
+      let all = true;
+      for (const key of keys) {
+        all = all && this.delete(key);
+      }
+      return all;
+    };
+    FormData.prototype.update ??= function update(key, callback, thunk) {
+      this.set(key, callback(this.get(key) ?? thunk(key, this), key, this));
+      return this;
+    };
+    (() => {
+      FormData.prototype.updateOrInsert ??= FormData.prototype.upsert;
+    })();
   })();
 })();
