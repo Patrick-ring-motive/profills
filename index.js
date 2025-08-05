@@ -1,4 +1,5 @@
 (async ()=>{
+  
   async function importScript(url){
     return eval?.call(globalThis,await(await fetch(url)).text());
   }
@@ -6,7 +7,7 @@
   await import('./array-like.js');
   await import('./map-like.js');
 
-
+  await import('./cookie.mjs');
 
   
   console.log('Headers',Object.getOwnPropertyNames(Map.prototype).filter(x=>!Object.getOwnPropertyNames(Headers.prototype).includes(x)));

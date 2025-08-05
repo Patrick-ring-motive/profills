@@ -24,6 +24,9 @@
   const isArray = (x) =>
     Array.isArray(x) || x instanceof Array || instanceOf(x, TypedArray);
   const apply = ($this, fn, args) => $this[fn].apply($this, args);
+  const enact = (fn, args) => fn.apply(undefined, args);
+  const arr = (x) => Array.from(x);
+  const anew = (fn, args) => Reflect.construct(fn, args);
   const pureProxy = (item) => {
     const funcMap = new Map();
     return new Proxy(item, {
@@ -132,6 +135,37 @@
     configureable: true,
   });
 
+  const tryStructuredClone = (x) => {
+    try {
+      return structuredClone(x);
+    } catch {}
+  };
+
+  const tryNew = (x) => {
+    try {
+      const constructor = x.constructor;
+      return new constructor(x);
+    } catch {}
+  };
+  const $cloneOf = Symbol("*cloneOf");
+  self.cloner = function clone(value) {
+    if (value === null) return new Null();
+    if (value === undefined) return new Undefined();
+    const x = Object(value.valueOf());
+    if (x !== value) return x;
+    const c =
+      x?.clone?.() ??
+      x?.cloneNode?.() ??
+      x?.slice?.() ??
+      tryStructuredClone(x) ??
+      tryNew(x) ??
+      pureProxy(value);
+    try {
+      c[$cloneOf] = value?.[$cloneOf] ?? value;
+    } catch {}
+    return c;
+  };
+
   function Obj(value) {
     if (value === null) return new Null();
     if (value === undefined) return new Undefined();
@@ -144,11 +178,17 @@
   (() => {
     Map.prototype.append ??= function append(key, value) {
       if (!this.has(key)) return this.set(key, value);
-      return this.set(Obj(key), value);
+      return this.set(clone(key), value);
     };
     Map.prototype.getAll ??= function getAll(key) {
       return [...this.entries()]
-        .filter(([k, v]) => k?.valueOf() == key?.valueOf())
+        .filter(
+          ([k, v]) =>
+            k?.valueOf() == key?.valueOf() ||
+            key?.valueOf() == k?.[$cloneOf]?.valueOf() ||
+            k?.valueOf() == key?.[$cloneOf]?.valueOf(),
+          k?.[$cloneOf]?.valueOf() == key?.[$cloneOf]?.valueOf(),
+        )
         .map(([k, v]) => v);
     };
     Map.from ??= function from(obj) {
@@ -220,7 +260,7 @@
 
     // `Map.prototype.some` method
     // https://github.com/tc39/proposal-collection-methods
-    Headers.prototype.some ??= function some() {
+    Headers.prototype.some ??= function some(callbackfn, thisArg) {
       let rtrn = false;
       const fn = callbackfn.bind(thisArg);
       this.forEach((value, key) => {
@@ -232,7 +272,7 @@
     (() => {
       // `Map.prototype.every` method
       // https://github.com/tc39/proposal-collection-methods
-      Headers.prototype.every ??= function every() {
+      Headers.prototype.every ??= function every(callbackfn, thisArg) {
         let rtrn = true;
         const fn = callbackfn.bind(thisArg);
         this.forEach((value, key) => {
@@ -254,7 +294,7 @@
       // `Map.prototype.find` method
       // https://github.com/tc39/proposal-collection-methods
       Headers.prototype.find ??= function find(callbackfn, thisArg) {
-        const boundFunction = bind(callbackfn, thisArg);
+        const boundFunction = callbackfn.bind(thisArg);
         for (const [key, value] of this) {
           if (boundFunction(value, key, this)) return value;
         }
@@ -400,7 +440,7 @@
 
     // `Map.prototype.some` method
     // https://github.com/tc39/proposal-collection-methods
-    URLSearchParams.prototype.some ??= function some() {
+    URLSearchParams.prototype.some ??= function some(callbackfn, thisArg) {
       let rtrn = false;
       const fn = callbackfn.bind(thisArg);
       this.forEach((value, key) => {
@@ -412,7 +452,7 @@
     (() => {
       // `Map.prototype.every` method
       // https://github.com/tc39/proposal-collection-methods
-      URLSearchParams.prototype.every ??= function every() {
+      URLSearchParams.prototype.every ??= function every(callbackfn, thisArg) {
         let rtrn = true;
         const fn = callbackfn.bind(thisArg);
         this.forEach((value, key) => {
@@ -434,7 +474,7 @@
       // `Map.prototype.find` method
       // https://github.com/tc39/proposal-collection-methods
       URLSearchParams.prototype.find ??= function find(callbackfn, thisArg) {
-        const boundFunction = bind(callbackfn, thisArg);
+        const boundFunction = callbackfn.bind(thisArg);
         for (const [key, value] of this) {
           if (boundFunction(value, key, this)) return value;
         }
@@ -580,7 +620,7 @@
 
     // `Map.prototype.some` method
     // https://github.com/tc39/proposal-collection-methods
-    FormData.prototype.some ??= function some() {
+    FormData.prototype.some ??= function some(callbackfn, thisArg) {
       let rtrn = false;
       const fn = callbackfn.bind(thisArg);
       this.forEach((value, key) => {
@@ -592,7 +632,7 @@
     (() => {
       // `Map.prototype.every` method
       // https://github.com/tc39/proposal-collection-methods
-      FormData.prototype.every ??= function every() {
+      FormData.prototype.every ??= function every(callbackfn, thisArg) {
         let rtrn = true;
         const fn = callbackfn.bind(thisArg);
         this.forEach((value, key) => {
@@ -614,20 +654,23 @@
       // `Map.prototype.find` method
       // https://github.com/tc39/proposal-collection-methods
       FormData.prototype.find ??= function find(callbackfn, thisArg) {
-        const boundFunction = bind(callbackfn, thisArg);
+        const boundFunction = callbackfn.bind(thisArg);
         for (const [key, value] of this) {
           if (boundFunction(value, key, this)) return value;
         }
       };
     })();
 
-    new FormData().size ??
-      Object.defineProperty(FormData.prototype, "size", {
-        get() {
-          return Array.from(this.entries()).length;
-        },
-        set() {},
-      });
+    (() => {
+      new FormData().size ??
+        Object.defineProperty(FormData.prototype, "size", {
+          get() {
+            return Array.from(this.entries()).length;
+          },
+          set() {},
+        });
+    })();
+
     FormData.prototype.mapValues ??= function mapValues(
       callbackFn,
       thisArg = this,
