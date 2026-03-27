@@ -46,7 +46,7 @@ const pureProxy = (item) => {
 };
 
 //undefined
-const Undefined = function () {
+const Undefined = function() {
   if (!new.target) return undefined;
 };
 Undefined.__proto__ = null;
@@ -70,7 +70,7 @@ Object.defineProperty(Undefined, "name", {
   configureable: true,
 });
 
-const Null = function () {
+const Null = function() {
   if (!new.target) return null;
 };
 Null.__proto__ = null;

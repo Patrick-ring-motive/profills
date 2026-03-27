@@ -1,5 +1,5 @@
 (() => {
-  const objDoProp = function (obj, prop, def, enm, mut) {
+  const objDoProp = function(obj, prop, def, enm, mut) {
     return Object.defineProperty(obj, prop, {
       value: def,
       writable: mut,
@@ -75,7 +75,7 @@
   };
 
   //undefined
-  const Undefined = function () {
+  const Undefined = function() {
     if (!new.target) return undefined;
   };
   Undefined.__proto__ = null;
@@ -99,7 +99,7 @@
     configureable: true,
   });
 
-  const Null = function () {
+  const Null = function() {
     if (!new.target) return null;
   };
   Null.__proto__ = null;
@@ -184,9 +184,9 @@
       return [...this.entries()]
         .filter(
           ([k, v]) =>
-            k?.valueOf() == key?.valueOf() ||
-            key?.valueOf() == k?.[$cloneOf]?.valueOf() ||
-            k?.valueOf() == key?.[$cloneOf]?.valueOf(),
+          k?.valueOf() == key?.valueOf() ||
+          key?.valueOf() == k?.[$cloneOf]?.valueOf() ||
+          k?.valueOf() == key?.[$cloneOf]?.valueOf(),
           k?.[$cloneOf]?.valueOf() == key?.[$cloneOf]?.valueOf(),
         )
         .map(([k, v]) => v);
